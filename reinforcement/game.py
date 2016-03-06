@@ -1,5 +1,19 @@
 # game.py
 # -------
+# Licensing Information:  You are free to use or extend these projects for
+# educational purposes provided that (1) you do not distribute or publish
+# solutions, (2) you retain this notice, and (3) you provide clear
+# attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
+# 
+# Attribution Information: The Pacman AI projects were developed at UC Berkeley.
+# The core projects and autograders were primarily created by John DeNero
+# (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
+# Student side autograding was added by Brad Miller, Nick Hay, and
+# Pieter Abbeel (pabbeel@cs.berkeley.edu).
+
+
+# game.py
+# -------
 # Licensing Information: Please do not distribute or publish solutions to this
 # project. You are free to use and extend these projects for educational
 # purposes. The Pacman AI projects were developed at UC Berkeley, primarily by
@@ -9,6 +23,7 @@
 from util import *
 import time, os
 import traceback
+import sys
 
 #######################
 # Parts worth reading #
@@ -112,6 +127,8 @@ class AgentState:
         self.configuration = startConfiguration
         self.isPacman = isPacman
         self.scaredTimer = 0
+        self.numCarrying = 0
+        self.numReturned = 0
 
     def __str__( self ):
         if self.isPacman:
@@ -131,6 +148,8 @@ class AgentState:
         state = AgentState( self.start, self.isPacman )
         state.configuration = self.configuration
         state.scaredTimer = self.scaredTimer
+        state.numCarrying = self.numCarrying
+        state.numReturned = self.numReturned
         return state
 
     def getPosition(self):
@@ -364,7 +383,9 @@ class GameStateData:
             self.layout = prevState.layout
             self._eaten = prevState._eaten
             self.score = prevState.score
+
         self._foodEaten = None
+        self._foodAdded = None
         self._capsuleEaten = None
         self._agentMoved = None
         self._lose = False
@@ -377,6 +398,7 @@ class GameStateData:
         state.layout = self.layout.deepCopy()
         state._agentMoved = self._agentMoved
         state._foodEaten = self._foodEaten
+        state._foodAdded = self._foodAdded
         state._capsuleEaten = self._capsuleEaten
         return state
 
@@ -467,6 +489,7 @@ class GameStateData:
         Creates an initial game state from a layout array (see layout.py).
         """
         self.food = layout.food.copy()
+        #self.capsules = []
         self.capsules = layout.capsules[:]
         self.layout = layout
         self.score = 0
@@ -556,7 +579,7 @@ class Game:
                 self.mute(i)
                 # this is a null agent, meaning it failed to load
                 # the other team wins
-                print "Agent %d failed to load" % i
+                print >>sys.stderr, "Agent %d failed to load" % i
                 self.unmute()
                 self._agentCrash(i, quiet=True)
                 return
@@ -571,7 +594,7 @@ class Game:
                             time_taken = time.time() - start_time
                             self.totalAgentTimes[i] += time_taken
                         except TimeoutFunctionException:
-                            print "Agent %d ran out of time on startup!" % i
+                            print >>sys.stderr, "Agent %d ran out of time on startup!" % i
                             self.unmute()
                             self.agentTimeout = True
                             self._agentCrash(i, quiet=True)
@@ -628,7 +651,7 @@ class Game:
                             raise TimeoutFunctionException()
                         action = timed_func( observation )
                     except TimeoutFunctionException:
-                        print "Agent %d timed out on a single move!" % agentIndex
+                        print >>sys.stderr, "Agent %d timed out on a single move!" % agentIndex
                         self.agentTimeout = True
                         self._agentCrash(agentIndex, quiet=True)
                         self.unmute()
@@ -638,17 +661,18 @@ class Game:
 
                     if move_time > self.rules.getMoveWarningTime(agentIndex):
                         self.totalAgentTimeWarnings[agentIndex] += 1
-                        print "Agent %d took too long to make a move! This is warning %d" % (agentIndex, self.totalAgentTimeWarnings[agentIndex])
+                        print >>sys.stderr, "Agent %d took too long to make a move! This is warning %d" % (agentIndex, self.totalAgentTimeWarnings[agentIndex])
                         if self.totalAgentTimeWarnings[agentIndex] > self.rules.getMaxTimeWarnings(agentIndex):
-                            print "Agent %d exceeded the maximum number of warnings: %d" % (agentIndex, self.totalAgentTimeWarnings[agentIndex])
+                            print >>sys.stderr, "Agent %d exceeded the maximum number of warnings: %d" % (agentIndex, self.totalAgentTimeWarnings[agentIndex])
                             self.agentTimeout = True
                             self._agentCrash(agentIndex, quiet=True)
                             self.unmute()
+                            return
 
                     self.totalAgentTimes[agentIndex] += move_time
                     #print "Agent: %d, time: %f, total: %f" % (agentIndex, move_time, self.totalAgentTimes[agentIndex])
                     if self.totalAgentTimes[agentIndex] > self.rules.getMaxTotalTime(agentIndex):
-                        print "Agent %d ran out of time! (time: %1.2f)" % (agentIndex, self.totalAgentTimes[agentIndex])
+                        print >>sys.stderr, "Agent %d ran out of time! (time: %1.2f)" % (agentIndex, self.totalAgentTimes[agentIndex])
                         self.agentTimeout = True
                         self._agentCrash(agentIndex, quiet=True)
                         self.unmute()
