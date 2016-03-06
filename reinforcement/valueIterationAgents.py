@@ -47,17 +47,18 @@ class ValueIterationAgent(ValueEstimationAgent):
     
         #Compute Ut+1 for all states
         for state in states:
-            actions = mdp.getPossibleActions(state)
-            maxVal = MIN
             
             if mdp.isTerminal(state):
                 self.values[state] = 0
                 continue
             
+            actions = mdp.getPossibleActions(state)
+            maxVal = MIN
+
             #iterate through trans of each action of the state and sum up values 
             for action in actions:
                 transitions = mdp.getTransitionStatesAndProbs(state, action)
-                sum = 0
+                totalSum = 0
                 
                 for transition in transitions:
                     #transition[0] = nextState, transition[1] = probability
@@ -65,8 +66,8 @@ class ValueIterationAgent(ValueEstimationAgent):
                     #value of the nextState
                     UtValue = self.values[transition[0]]
                     #using formula of value iteration from wikipedia
-                    sum += transition[1]*(reward + discount * UtValue)
-                maxVal = max(maxVal, sum)
+                    totalSum += transition[1]*(reward + discount * UtValue)
+                maxVal = max(maxVal, totalSum)
                 
                 #for some reason, self.values[state] = maxVal doesn't work.
                 temp[state] = maxVal
